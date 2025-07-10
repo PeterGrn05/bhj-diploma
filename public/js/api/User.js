@@ -4,12 +4,13 @@
  * Имеет свойство URL, равное '/user'.
  * */
 class User {
+  static URL = '/user';
   /**
    * Устанавливает текущего пользователя в
    * локальном хранилище.
    * */
   static setCurrent(user) {
-
+    localStorage.setItem('user', JSON.stringify(user));
   }
 
   /**
@@ -17,7 +18,7 @@ class User {
    * пользователе из локального хранилища.
    * */
   static unsetCurrent() {
-
+    localStorage.removeItem('user');  
   }
 
   /**
@@ -25,7 +26,8 @@ class User {
    * из локального хранилища
    * */
   static current() {
-
+    const user = localStorage.getItem('user');
+    return user ? JSON.parse(user) : undefined;
   }
 
   /**
@@ -33,7 +35,17 @@ class User {
    * авторизованном пользователе.
    * */
   static fetch(callback) {
+    let url = `${this.URL}/current`
+    let options = createOptions(url, 'GET', undefined, (err, response) => {
+      if (response && response.success) {
+        this.setCurrent(response.user);
+      } else {
+        this.unsetCurrent();
+      }
 
+      callback(err, response);
+    });
+    createRequest(options);
   }
 
   /**
@@ -43,18 +55,21 @@ class User {
    * User.setCurrent.
    * */
   static login(data, callback) {
-    createRequest({
-      url: this.URL + '/login',
-      method: 'POST',
-      responseType: 'json',
-      data,
-      callback: (err, response) => {
-        if (response && response.user) {
+      if (data.email && data.password) {
+      let url = `${this.URL}/login`;
+      let options = createOptions(url, 'POST', data, (err, response) => {
+        if (response && response.success) {
           this.setCurrent(response.user);
         }
+
         callback(err, response);
-      }
-    });
+      })
+
+      createRequest(options);
+
+    } else {
+      console.log('Одно из обязательных полей не заполнено')
+    }
   }
 
   /**
@@ -64,7 +79,20 @@ class User {
    * User.setCurrent.
    * */
   static register(data, callback) {
+        if (data.name && data.email && data.password) {
+      let url = `${this.URL}/register`;
+      let options = createOptions(url, 'POST', data, (err, response) => {
+        if (response && response.success) {
+          this.setCurrent(response.user);
+        }
 
+        callback(err, response);
+      });
+
+      createRequest(options);
+    } else {
+      console.log('Одно из обязательных полей не заполнено');
+    }
   }
 
   /**
@@ -72,6 +100,14 @@ class User {
    * выхода необходимо вызвать метод User.unsetCurrent
    * */
   static logout(callback) {
+     const url = `${this.URL}/logout`;
+    const options = createOptions(url, 'POST', undefined, (err, response) => {
+      if (response.success) {
+        this.unsetCurrent();
+      }
 
+      callback(err, response);
+    });
+    createRequest(options);
   }
 }
